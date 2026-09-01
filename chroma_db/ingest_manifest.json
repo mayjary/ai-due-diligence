@@ -1,0 +1,17 @@
+{
+  "/Users/mayjary/Downloads/rag-project/data/Apple/apple_10k.pdf": {
+    "chunk_count": 533,
+    "hash": "ec74758cd767465362c641cf2fd5d8fedd477aed2bf7f62117e67610435dcb88",
+    "indexed_at": "2026-07-05T10:37:20.915743+00:00"
+  },
+  "/Users/mayjary/Downloads/rag-project/data/Restaurant/realistic_restaurant_reviews.csv": {
+    "chunk_count": 123,
+    "hash": "8ace5c1cb728c3c8a355d90a414849ebd645e021aae8a5b32303ef310917254e",
+    "indexed_at": "2026-07-05T10:37:24.419600+00:00"
+  },
+  "/Users/mayjary/Downloads/rag-project/data/Tesla/TSLA-Q1-2026-Update.pdf": {
+    "chunk_count": 63,
+    "hash": "585393e06da51f759486ecb8e0cbf8c4eb9372ffb770cbd64037b5bb6ab1e485",
+    "indexed_at": "2026-07-05T10:37:29.024674+00:00"
+  }
+}
