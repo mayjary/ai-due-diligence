@@ -24,6 +24,9 @@ import embeddings
 import loaders
 import splitter
 import utils
+from dd_copilot.db.session import get_session_factory, init_db
+from dd_copilot.ingestion import extract_financial_facts, split_documents_section_aware
+from dd_copilot.repository import persist_ingestion
 
 logger = utils.logger
 
@@ -163,7 +166,9 @@ def ingest(
             stats["files_failed"] += 1
             continue
 
-        chunks = splitter.split_documents(raw_documents)
+        # Preserve complete financial tables so table labels and multi-year
+        # values remain retrievable as a single evidence unit.
+        chunks = split_documents_section_aware(raw_documents) if config.COPILOT_ENABLED else splitter.split_documents(raw_documents)
         if not chunks:
             logger.warning("Splitting produced 0 chunks for %s; not indexed.", file_path)
             stats["files_failed"] += 1
@@ -173,6 +178,8 @@ def ingest(
         # This also means re-ingesting an unchanged file naturally overwrites
         # the same IDs instead of duplicating them.
         ids = [f"{file_hash}-{i}" for i in range(len(chunks))]
+        for chunk, chunk_id in zip(chunks, ids):
+            chunk.metadata["chunk_id"] = chunk_id
 
         try:
             for start in range(0, len(chunks), batch_size):
@@ -183,6 +190,22 @@ def ingest(
             logger.error("Embedding/insertion failed for %s: %s", file_path, exc)
             stats["files_failed"] += 1
             continue
+
+        if config.COPILOT_ENABLED:
+            try:
+                init_db()
+                facts = extract_financial_facts(chunks, ids)
+                session = get_session_factory()()
+                try:
+                    persist_ingestion(session, file_path, chunks, ids, facts)
+                    session.commit()
+                finally:
+                    session.close()
+                logger.info("Persisted %d structured financial facts for %s.", len(facts), file_path.name)
+            except Exception as exc:
+                # Keep the vector index usable even if optional relational
+                # persistence is unavailable; retrieval will degrade safely.
+                logger.exception("Structured copilot persistence failed for %s: %s", file_path, exc)
 
         utils.record_indexed_file(file_path, file_hash, len(chunks), manifest)
         stats["files_indexed"] += 1

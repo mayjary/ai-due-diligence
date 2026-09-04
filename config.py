@@ -115,3 +115,21 @@ MAX_JSON_RECORDS: int = int(os.environ.get("RAG_MAX_JSON_RECORDS", 200_000))
 # Logging
 # ---------------------------------------------------------------------------
 LOG_LEVEL: str = os.environ.get("RAG_LOG_LEVEL", "INFO")
+
+# ---------------------------------------------------------------------------
+# AI Due Diligence Copilot
+# ---------------------------------------------------------------------------
+# This path is intentionally separate from Chroma. PostgreSQL (including a
+# pgvector-backed deployment) is selected by setting DATABASE_URL.
+COPILOT_ENABLED: bool = os.environ.get("RAG_COPILOT_ENABLED", "true").lower() in ("true", "1", "yes")
+DATABASE_URL: str = os.environ.get("DATABASE_URL", f"sqlite:///{CHROMA_DIR / 'copilot.db'}")
+VECTOR_TOP_K: int = int(os.environ.get("RAG_VECTOR_TOP_K", "20"))
+BM25_TOP_K: int = int(os.environ.get("RAG_BM25_TOP_K", "20"))
+RRF_TOP_K: int = int(os.environ.get("RAG_RRF_TOP_K", "16"))
+RERANK_TOP_K: int = int(os.environ.get("RAG_RERANK_TOP_K", "8"))
+RRF_K: int = int(os.environ.get("RAG_RRF_K", "60"))
+TABLE_CHUNK_MAX_CHARS: int = int(os.environ.get("RAG_TABLE_CHUNK_MAX_CHARS", "3500"))
+FACT_CONFIDENCE: float = float(os.environ.get("RAG_FACT_CONFIDENCE", "0.95"))
+LLM_TIMEOUT_SECONDS: int = int(os.environ.get("RAG_LLM_TIMEOUT_SECONDS", "180"))
+API_HOST: str = os.environ.get("RAG_API_HOST", "127.0.0.1")
+API_PORT: int = int(os.environ.get("RAG_API_PORT", "8000"))
