@@ -30,6 +30,7 @@ from langchain_ollama import OllamaLLM
 import config
 import retrieve
 import utils
+from dd_copilot.pipeline import CopilotPipeline
 from financial_reasoning.formatters import format_reasoning_for_display, format_reasoning_for_prompt
 from financial_reasoning.pipeline import FinancialReasoningPipeline, format_document_context
 from financial_reasoning.prompts import ANSWER_WITH_REASONING_PROMPT
@@ -97,16 +98,17 @@ def run_chat() -> None:
     reasoning_prompt = ChatPromptTemplate.from_template(ANSWER_WITH_REASONING_PROMPT)
     reasoning_chain = reasoning_prompt | llm
 
-    reasoning_pipeline = FinancialReasoningPipeline() if config.REASONING_ENABLED else None
+    reasoning_pipeline = FinancialReasoningPipeline() if config.REASONING_ENABLED and not config.COPILOT_ENABLED else None
 
     vector_store = retrieve.get_vector_store()
+    copilot_pipeline = CopilotPipeline(vector_store=vector_store) if config.COPILOT_ENABLED else None
 
     active_filter: dict | None = None
     k = config.RETRIEVER_DEFAULT_K
     search_type = config.RETRIEVER_DEFAULT_SEARCH_TYPE
     show_reasoning = config.REASONING_SHOW_TRACE
 
-    mode_label = "reasoning + synthesis" if config.REASONING_ENABLED else "direct RAG"
+    mode_label = "hybrid retrieval + one-call copilot" if copilot_pipeline else ("reasoning + synthesis" if config.REASONING_ENABLED else "direct RAG")
     print(
         f"Multi-document RAG chat [{mode_label}]. "
         "Type 'q' to quit, ':filter key=value' to scope, ':mmr' to toggle MMR.\n"
@@ -145,6 +147,24 @@ def run_chat() -> None:
             continue
 
         request_started = time.perf_counter()
+
+        # The copilot owns retrieval, calculation, one LLM call, citation
+        # validation, and stage timing. Its vector/BM25 branches are parallel.
+        if copilot_pipeline is not None:
+            try:
+                company = active_filter.get("company") if active_filter else None
+                result = copilot_pipeline.ask(user_input, company=company)
+                elapsed_seconds = time.perf_counter() - request_started
+                rendered = f"{result.answer}\n\nConfidence: {result.confidence:.0%} — {result.confidence_reason}"
+                if result.warnings:
+                    rendered += "\nWarnings: " + "; ".join(result.warnings)
+                rendered += "\nTimings (ms): " + ", ".join(f"{key}={value}" for key, value in result.timings.model_dump().items() if value is not None)
+                print(f"\n{_append_performance_footer(rendered, elapsed_seconds)}\n")
+            except Exception as exc:
+                logger.exception("Copilot pipeline failed: %s", exc)
+                elapsed_seconds = time.perf_counter() - request_started
+                print(_append_performance_footer("Sorry, the copilot failed to generate an answer. Check logs for details.", elapsed_seconds))
+            continue
 
         try:
             retriever = retrieve.build_retriever(
