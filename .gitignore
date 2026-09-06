@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+.next/
+.env
+.env.local
+
+chroma_db/
+workspaces/
+logs/
+
+*.db
+*.sqlite
+*.sqlite3
