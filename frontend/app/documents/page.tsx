@@ -10,11 +10,19 @@ import { TableSkeleton } from '@/components/shared/loading-skeletons';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Search, FileText, Upload, CheckCircle2, Loader2, Circle, FileUp } from 'lucide-react';
-import { documents, companies } from '@/lib/mock';
+import { getDocuments, getCompanies, uploadDocument, getUploadJob } from '@/lib/api/client';
+import type { DocumentRow, Company } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedType, setSelectedType] = useState('Other');
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState('');
   const [search, setSearch] = useState('');
   const [filterCompany, setFilterCompany] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -22,10 +30,13 @@ export default function DocumentsPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [uploadStep, setUploadStep] = useState(0);
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(t);
-  }, []);
+  async function refresh() {
+    const [ds, cs] = await Promise.all([getDocuments(), getCompanies()]);
+    setDocuments(ds); setCompanies(cs);
+    if (!selectedCompany && cs[0]) setSelectedCompany(cs[0].id);
+  }
+
+  useEffect(() => { refresh().catch((e) => setUploadError(e.message)).finally(() => setLoading(false)); }, []);
 
   const filtered = documents.filter((d) => {
     if (search && !d.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -35,17 +46,21 @@ export default function DocumentsPage() {
     return true;
   });
 
-  const handleUpload = () => {
-    setUploadStep(0);
-    const interval = setInterval(() => {
-      setUploadStep((s) => {
-        if (s >= 5) {
-          clearInterval(interval);
-          return s;
-        }
-        return s + 1;
-      });
-    }, 800);
+  const handleUpload = async () => {
+    if (!selectedFile || !selectedCompany) { setUploadError('Select a company and file first.'); return; }
+    try {
+      setUploadError(''); setUploadStep(0);
+      const result = await uploadDocument(selectedFile, selectedCompany, selectedType, selectedYear);
+      let done = false;
+      while (!done) {
+        const job = await getUploadJob(result.job_id);
+        setUploadStep(job.status === 'queued' ? 0 : job.status === 'processing' ? 3 : job.status === 'indexed' ? 5 : 5);
+        done = ['indexed', 'failed'].includes(job.status);
+        if (!done) await new Promise((r) => setTimeout(r, 1000));
+        if (job.status === 'failed') throw new Error(job.error_message || 'Document processing failed');
+      }
+      await refresh();
+    } catch (e) { setUploadError(e instanceof Error ? e.message : 'Upload failed'); }
   };
 
   const uploadSteps = [
@@ -65,7 +80,7 @@ export default function DocumentsPage() {
             <h1 className="text-xl font-semibold text-foreground">Documents</h1>
             <p className="text-sm text-muted-foreground">Manage and upload company documents for AI processing</p>
           </div>
-          <Button size="sm" onClick={() => { setUploadOpen(true); setUploadStep(-1); }}>
+          <Button size="sm" onClick={() => { setUploadOpen(true); setUploadStep(-1); setSelectedFile(null); setUploadError(''); }}>
             <Plus className="h-3.5 w-3.5 mr-1" />
             Upload Document
           </Button>
@@ -174,21 +189,25 @@ export default function DocumentsPage() {
             <DialogDescription>Upload a PDF, TXT, or DOCX file for AI processing</DialogDescription>
           </DialogHeader>
 
+          {uploadError && <div className="mb-3 rounded border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{uploadError}</div>}
+
           {uploadStep < 0 ? (
             <div className="space-y-4">
               {/* Drag and drop area */}
-              <div className="rounded-md border-2 border-dashed border-border bg-background p-8 text-center">
+              <label className="block cursor-pointer rounded-md border-2 border-dashed border-border bg-background p-8 text-center hover:border-primary/40">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
                   <FileUp className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium text-foreground">Drag and drop your file here</p>
-                <p className="mt-1 text-xs text-muted-foreground">or click to browse — PDF, TXT, DOCX up to 50MB</p>
-              </div>
+                <p className="mt-1 text-xs text-muted-foreground">Click to browse — PDF, XLS/XLSX, CSV, TXT, DOCX, MD, JSON up to 2GB</p>
+                <input type="file" className="sr-only" accept=".pdf,.xls,.xlsx,.csv,.txt,.docx,.md,.markdown,.json" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} />
+                {selectedFile && <p className="mt-3 text-xs text-primary">Selected: {selectedFile.name} · {(selectedFile.size / 1024 / 1024).toFixed(1)} MB</p>}
+              </label>
 
               {/* Company */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Company</label>
-                <Select>
+                <Select value={selectedCompany} onValueChange={setSelectedCompany}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select company" />
                   </SelectTrigger>
@@ -203,7 +222,7 @@ export default function DocumentsPage() {
               {/* Document Type */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Document Type</label>
-                <Select>
+                <Select value={selectedType} onValueChange={setSelectedType}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -222,11 +241,13 @@ export default function DocumentsPage() {
               {/* Fiscal Year */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Fiscal Year</label>
-                <Select>
+                <Select value={selectedYear ? String(selectedYear) : ''} onValueChange={(v) => setSelectedYear(Number(v))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select year" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="2026">2026</SelectItem>
+                    <SelectItem value="2025">2025</SelectItem>
                     <SelectItem value="2024">2024</SelectItem>
                     <SelectItem value="2023">2023</SelectItem>
                     <SelectItem value="2022">2022</SelectItem>

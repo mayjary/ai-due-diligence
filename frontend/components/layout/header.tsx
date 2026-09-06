@@ -21,19 +21,23 @@ import {
   CommandItem,
   CommandShortcut,
 } from '@/components/ui/command';
-import { companies } from '@/lib/mock';
+import { getCompanies } from '@/lib/api/client';
+import type { User, Company } from '@/lib/types';
 
 interface HeaderProps {
   companyName?: string;
   companyTicker?: string;
   companySector?: string;
+  user: User;
 }
 
-export function Header({ companyName, companyTicker, companySector }: HeaderProps) {
+export function Header({ companyName, companyTicker, companySector, user }: HeaderProps) {
   const router = useRouter();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
 
   useEffect(() => {
+    getCompanies().then(setCompanies).catch(() => setCompanies([]));
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
@@ -97,7 +101,7 @@ export function Header({ companyName, companyTicker, companySector }: HeaderProp
 
           <div className="flex items-center gap-1.5 cursor-pointer">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium text-foreground">
-              MK
+              {user.name.split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
             </div>
             <ChevronDown className="h-3 w-3 text-muted-foreground" />
           </div>
