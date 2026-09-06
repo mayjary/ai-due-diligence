@@ -88,6 +88,7 @@ class TimingBreakdown(BaseModel):
 
 
 class CopilotAnswer(BaseModel):
+    research_id: str | None = None
     answer: str
     query_type: QueryType
     evidence_pack: EvidencePack
@@ -96,3 +97,24 @@ class CopilotAnswer(BaseModel):
     confidence_reason: str
     timings: TimingBreakdown
     warnings: list[str] = Field(default_factory=list)
+
+
+class ResearchSummary(BaseModel):
+    id: str
+    query: str
+    company_id: str
+    company_name: str
+    query_type: QueryType
+    status: str
+    confidence: float
+    citations_valid: bool
+    created_at: str
+    total_ms: float | None = None
+
+
+class ResearchDetail(ResearchSummary):
+    answer: str
+    confidence_reason: str
+    warnings: list[str] = Field(default_factory=list)
+    evidence_pack: EvidencePack
+    timings: TimingBreakdown

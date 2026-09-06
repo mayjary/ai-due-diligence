@@ -72,34 +72,54 @@ class UnsafePathError(Exception):
     """Raised when a candidate file path escapes the allowed data directory."""
 
 
-def sanitize_path(candidate: Path, allowed_root: Path = config.DATA_DIR) -> Path:
+def sanitize_path(
+    candidate: Path,
+    allowed_root: Path | None = None,
+) -> Path:
     """
-    Resolve `candidate` and guarantee it lives inside `allowed_root`.
+    Resolve a candidate path and guarantee that it lives inside an
+    approved application data/workspace directory.
 
-    This is the single choke point every file-reading function must pass
-    through before touching disk. It defends against:
-        * directory traversal ("../../etc/passwd")
-        * symlinks that point outside the data directory
-        * absolute paths smuggled in via user input
+    Approved roots:
+        - config.DATA_DIR
+        - dd_copilot.workspace.WORKSPACES_ROOT
 
-    Raises:
-        UnsafePathError: if the resolved path is not contained in allowed_root,
-                          or if a symlink escapes the allowed root.
+    This protects against:
+        - directory traversal
+        - absolute paths supplied by users
+        - symlinks escaping approved directories
     """
-    allowed_root = allowed_root.resolve()
+    from dd_copilot.workspace import WORKSPACES_ROOT
+
+    candidate = Path(candidate)
+
+    if allowed_root is not None:
+        allowed_roots = [Path(allowed_root).resolve()]
+    else:
+        allowed_roots = [
+            config.DATA_DIR.resolve(),
+            WORKSPACES_ROOT.resolve(),
+        ]
 
     try:
         resolved = candidate.resolve(strict=True)
     except (OSError, RuntimeError) as exc:
-        raise UnsafePathError(f"Could not resolve path '{candidate}': {exc}") from exc
-
-    # If any component along the way is a symlink, resolved will already
-    # reflect the final real location -- so checking containment on the
-    # fully resolved path catches symlink escapes as well as ".." tricks.
-    if allowed_root not in resolved.parents and resolved != allowed_root:
         raise UnsafePathError(
-            f"Path '{resolved}' escapes the allowed data directory '{allowed_root}'"
-        )
+            f"Could not resolve path '{candidate}': {exc}"
+        ) from exc
+
+    for root in allowed_roots:
+        try:
+            resolved.relative_to(root)
+            return resolved
+        except ValueError:
+            continue
+
+    roots = ", ".join(str(root) for root in allowed_roots)
+
+    raise UnsafePathError(
+        f"Path '{resolved}' escapes all allowed directories: {roots}"
+    )
 
     return resolved
 

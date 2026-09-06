@@ -19,6 +19,7 @@ from pathlib import Path
 PROJECT_ROOT: Path = Path(__file__).resolve().parent
 DATA_DIR: Path = Path(os.environ.get("RAG_DATA_DIR", PROJECT_ROOT / "data")).resolve()
 CHROMA_DIR: Path = Path(os.environ.get("RAG_CHROMA_DIR", PROJECT_ROOT / "chroma_db")).resolve()
+CHROMA_DIR.mkdir(parents=True, exist_ok=True)
 MANIFEST_PATH: Path = CHROMA_DIR / "ingest_manifest.json"
 LOG_DIR: Path = PROJECT_ROOT / "logs"
 LOG_FILE: Path = LOG_DIR / "rag_system.log"
@@ -96,7 +97,7 @@ RETRIEVER_MMR_LAMBDA: float = float(os.environ.get("RAG_MMR_LAMBDA", 0.5))
 # ---------------------------------------------------------------------------
 # Security / resource limits
 # ---------------------------------------------------------------------------
-MAX_FILE_SIZE_MB: int = int(os.environ.get("RAG_MAX_FILE_SIZE_MB", 100))
+MAX_FILE_SIZE_MB: int = int(os.environ.get("RAG_MAX_FILE_SIZE_MB", 2048))
 MAX_FILE_SIZE_BYTES: int = MAX_FILE_SIZE_MB * 1024 * 1024
 
 MAX_PDF_PAGES: int = int(os.environ.get("RAG_MAX_PDF_PAGES", 2000))

@@ -8,15 +8,15 @@ import { StatusBadge } from '@/components/shared/status-badge';
 import { ReportsSkeleton } from '@/components/shared/loading-skeletons';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { FileBarChart, Download, ExternalLink, Plus } from 'lucide-react';
-import { reports } from '@/lib/mock';
+import { getReports } from '@/lib/api/client';
+import type { Report } from '@/lib/types';
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
+  const [reports, setReports] = useState<any[]>([]);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(t);
-  }, []);
+  useEffect(() => { getReports().then(setReports).catch((e) => setError(e.message)).finally(() => setLoading(false)); }, []);
 
   return (
     <AppShell>
@@ -33,6 +33,8 @@ export default function ReportsPage() {
             </Link>
           </Button>
         </div>
+
+        {error && <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</div>}
 
         {loading ? (
           <ReportsSkeleton />
@@ -58,14 +60,14 @@ export default function ReportsPage() {
                           <FileBarChart className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-foreground">{report.companyName}</div>
-                          <div className="text-xs text-muted-foreground font-mono">{report.companyTicker}</div>
+                          <div className="text-sm font-medium text-foreground">{report.company_name}</div>
+                          <div className="text-xs text-muted-foreground font-mono">{report.company_ticker || ""}</div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm font-medium text-foreground">{report.title}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{report.type}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{report.created}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{report.report_type}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{new Date(report.created_at).toLocaleString()}</TableCell>
                     <TableCell><StatusBadge status={report.status} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
