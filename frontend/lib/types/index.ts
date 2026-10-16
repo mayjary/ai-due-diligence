@@ -305,3 +305,29 @@ export interface AIInsight {
   category: 'growth' | 'risk' | 'management' | 'financial';
   description: string;
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  organization?: string | null;
+  created_at?: string;
+}
+
+export interface DashboardData {
+  company: { id: string; name: string; ticker?: string | null; sector?: string | null; documents_count: number } | null;
+  financials: Array<{
+    year: number;
+    revenue: number;
+    operatingIncome: number;
+    netIncome: number;
+    operatingCashFlow: number;
+    freeCashFlow: number;
+    operatingMargin: number;
+    netMargin: number;
+    revenueGrowth: number;
+  }>;
+  latest: any;
+  segments: Array<{ name: string; revenue: number; year: number }>;
+  recent_research: Array<{ id: string; query: string; company_id: string; company_name: string; confidence: number; created_at: string }>;
+}

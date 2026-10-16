@@ -9,17 +9,27 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { login } from '@/lib/api/client';
 
 export default function LoginPage() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => router.push('/dashboard'), 800);
-  };
+    setError('');
+    const form = new FormData(e.currentTarget);
+    try {
+      await login(String(form.get('email')), String(form.get('password')));
+      router.replace('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to sign in');
+    } finally { setLoading(false); }
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -42,10 +52,12 @@ export default function LoginPage() {
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              {error && <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</div>}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="you@firm.com"
                   required
@@ -63,6 +75,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your password"
                     required

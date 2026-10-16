@@ -247,3 +247,24 @@ def _parse_args() -> argparse.Namespace:
 if __name__ == "__main__":
     args = _parse_args()
     ingest(data_dir=args.data_dir, force=args.force, batch_size=args.batch_size)
+
+
+def ingest_user_file(file_path: Path, vector_store, session_factory) -> dict:
+    """Ingest exactly one already-uploaded file into a user's workspace."""
+    raw_documents = loaders.load_file(file_path)
+    if not raw_documents:
+        raise ValueError(f"No content could be extracted from {file_path.name}")
+    chunks = split_documents_section_aware(raw_documents) if config.COPILOT_ENABLED else splitter.split_documents(raw_documents)
+    if not chunks:
+        raise ValueError(f"No chunks were produced for {file_path.name}")
+    file_hash = utils.compute_file_hash(file_path)
+    ids = [f"{file_hash}-{i}" for i in range(len(chunks))]
+    for chunk, chunk_id in zip(chunks, ids):
+        chunk.metadata["chunk_id"] = chunk_id
+    for start in range(0, len(chunks), 100):
+        vector_store.add_documents(documents=chunks[start:start + 100], ids=ids[start:start + 100])
+    facts = extract_financial_facts(chunks, ids) if config.COPILOT_ENABLED else []
+    with session_factory() as session:
+        persist_ingestion(session, file_path, chunks, ids, facts)
+        session.commit()
+    return {"filename": file_path.name, "chunks": len(chunks), "facts": len(facts), "hash": file_hash}

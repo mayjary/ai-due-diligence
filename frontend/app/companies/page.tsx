@@ -10,17 +10,16 @@ import { StatusBadge } from '@/components/shared/status-badge';
 import { TableSkeleton } from '@/components/shared/loading-skeletons';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Plus, Search, Building2 } from 'lucide-react';
-import { companies } from '@/lib/mock';
+import { getCompanies } from '@/lib/api/client';
 import type { Company } from '@/lib/types';
 
 export default function CompaniesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(t);
-  }, []);
+  useEffect(() => { getCompanies().then(setCompanies).catch((e) => setError(e.message)).finally(() => setLoading(false)); }, []);
 
   const filtered = companies.filter(
     (c) =>
@@ -42,6 +41,8 @@ export default function CompaniesPage() {
             Add Company
           </Button>
         </div>
+
+        {error && <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</div>}
 
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

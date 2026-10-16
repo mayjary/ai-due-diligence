@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { logout } from '@/lib/api/client';
+import type { User } from '@/lib/types';
 import { Separator } from '@/components/ui/separator';
 import {
   LayoutDashboard,
@@ -32,20 +33,7 @@ const navItems = [
   { label: 'Reports', href: '/reports', icon: FileBarChart },
 ];
 
-const recentResearch = [
-  { label: "Why did Apple's revenue change?", href: '/research' },
-  { label: "What are Apple's major hidden risks?", href: '/research' },
-  { label: 'How dependent is Apple on iPhone?', href: '/research' },
-];
-
-const watchlist = [
-  { label: 'AAPL', href: '/companies/apple' },
-  { label: 'MSFT', href: '/companies/microsoft' },
-  { label: 'TSLA', href: '/companies/tesla' },
-  { label: 'NVDA', href: '/companies/nvidia' },
-];
-
-export function Sidebar() {
+export function Sidebar({ user }: { user: User }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -122,51 +110,9 @@ export function Sidebar() {
 
         <Separator className="my-3" />
 
-        {/* Watchlist */}
-        {!collapsed && (
-          <div className="px-3">
-            <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-              <Star className="h-3 w-3" />
-              Watchlist
-            </div>
-            <div className="space-y-0.5">
-              {watchlist.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center justify-between rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
-                >
-                  <span className="font-mono">{item.label}</span>
-                  <ChevronRight className="h-3 w-3 opacity-50" />
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <Separator className="my-3" />
-
-        {/* Recent Research */}
-        {!collapsed && (
-          <div className="px-3">
-            <div className="flex items-center gap-2 px-1 text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">
-              <Clock className="h-3 w-3" />
-              Recent Research
-            </div>
-            <div className="space-y-0.5">
-              {recentResearch.map((item, i) => (
-                <Link
-                  key={i}
-                  href={item.href}
-                  className="block rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors truncate"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* User-owned sections are loaded by their pages; the sidebar stays identity-aware. */}
       </nav>
+
 
       {/* Bottom section */}
       <div className="border-t border-border p-2 space-y-0.5">
@@ -204,17 +150,17 @@ export function Sidebar() {
         {/* User profile */}
         <div className={cn('flex items-center gap-2.5 rounded-md px-2.5 py-2', collapsed && 'justify-center')}>
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-medium text-foreground shrink-0">
-            MK
+            {user.name.split(/\s+/).map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-foreground truncate">Morgan Kane</div>
-              <div className="text-xs text-muted-foreground truncate">morgan@firm.com</div>
+              <div className="text-sm font-medium text-foreground truncate">{user.name}</div>
+              <div className="text-xs text-muted-foreground truncate">{user.email}</div>
             </div>
           )}
         </div>
-        <Link
-          href="/login"
+        <button
+          onClick={async () => { await logout(); window.location.href = '/login'; }}
           className={cn(
             'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors',
             collapsed && 'justify-center'
@@ -223,7 +169,7 @@ export function Sidebar() {
         >
           <LogOut className="h-4 w-4 shrink-0" />
           {!collapsed && <span>Logout</span>}
-        </Link>
+        </button>
       </div>
     </aside>
   );

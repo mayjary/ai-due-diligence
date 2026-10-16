@@ -150,3 +150,11 @@ moves on to the next file. Logs are written to both stdout and
 `logs/rag_system.log`, and cover: documents loaded, chunks created, files
 skipped, errors/warnings, and total ingestion time.
 # ai-due-diligence
+
+## Privacy-first local workspaces
+
+DD Copilot now separates identity from research data. Account identity is stored in `auth.db` by default (or the database configured with `AUTH_DATABASE_URL`). Each user's documents, Chroma vectors, chunks, financial facts, research and reports live under `workspaces/<user_id>/` and are never mixed with another user's workspace.
+
+For a hosted deployment, keep `AUTH_DATABASE_URL` on the central authentication service and run the document/RAG workspace locally on the user's machine. The browser talks to the local FastAPI instance for documents and AI research. Uploaded files are streamed to the local workspace rather than read into memory all at once.
+
+Set `DD_AUTH_SECRET` to a long random secret outside development. The local upload limit defaults to 2 GB and can be changed with `RAG_MAX_FILE_SIZE_MB`.
