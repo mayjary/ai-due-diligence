@@ -1,6 +1,7 @@
 # Python-generated files
 __pycache__/
 *.py[cod]
+*.pyc
 
 # Local databases and vector indexes
 chroma_db/
