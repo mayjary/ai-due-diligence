@@ -1,15 +1,21 @@
-.venv/
+# Python-generated files
 __pycache__/
+*.py[cod]
 *.pyc
-node_modules/
-.next/
-.env
-.env.local
 
+# Local databases and vector indexes
 chroma_db/
-workspaces/
-logs/
-
 *.db
 *.sqlite
 *.sqlite3
+
+# macOS
+.DS_Store
+
+# Virtual environments
+.venv/
+venv/
+
+# Frontend dependencies and build output
+node_modules/
+.next/
