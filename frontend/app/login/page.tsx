@@ -59,7 +59,8 @@ export default function LoginPage() {
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="you@firm.com"
+                  placeholder="admin@ddcopilot.local"
+                  defaultValue="admin@ddcopilot.local"
                   required
                   className="bg-background"
                 />
@@ -77,7 +78,7 @@ export default function LoginPage() {
                     id="password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
+                    placeholder="Admin12345!"
                     required
                     className="bg-background pr-10"
                   />

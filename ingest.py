@@ -249,11 +249,25 @@ if __name__ == "__main__":
     ingest(data_dir=args.data_dir, force=args.force, batch_size=args.batch_size)
 
 
-def ingest_user_file(file_path: Path, vector_store, session_factory) -> dict:
+def ingest_user_file(
+    file_path: Path,
+    vector_store,
+    session_factory,
+    company_name: str | None = None,
+    document_type: str | None = None,
+    fiscal_year: int | None = None,
+) -> dict:
     """Ingest exactly one already-uploaded file into a user's workspace."""
     raw_documents = loaders.load_file(file_path)
     if not raw_documents:
         raise ValueError(f"No content could be extracted from {file_path.name}")
+    for document in raw_documents:
+        if company_name:
+            document.metadata["company"] = company_name
+        if document_type:
+            document.metadata["document_type"] = document_type
+        if fiscal_year:
+            document.metadata["fiscal_year"] = fiscal_year
     chunks = split_documents_section_aware(raw_documents) if config.COPILOT_ENABLED else splitter.split_documents(raw_documents)
     if not chunks:
         raise ValueError(f"No chunks were produced for {file_path.name}")

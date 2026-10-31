@@ -139,6 +139,10 @@ export default function DocumentsPage() {
         {/* Table */}
         {loading ? (
           <TableSkeleton rows={8} />
+        ) : filtered.length === 0 ? (
+          <div className="rounded-md border border-dashed p-12 text-center text-sm text-muted-foreground">
+            No documents yet. Add a company, then upload a PDF, Excel, CSV, DOCX, or text file (up to 2 GB).
+          </div>
         ) : (
           <div className="rounded-md border border-border bg-card overflow-hidden">
             <Table>

@@ -19,11 +19,11 @@ from sqlalchemy import select, func
 import config
 import embeddings
 import retrieve
-from dd_copilot.auth import AuthSession, User, _hash_password, authenticate, create_token, init_auth_db, user_from_bearer
+from dd_copilot.auth import AuthSession, User, _hash_password, authenticate, create_token, init_auth_db, seed_admin_user, user_from_bearer
 from dd_copilot.db.models import Company, Document, DocumentJob, FinancialFact
 from dd_copilot.db.session import get_engine, get_session_factory
 from dd_copilot.pipeline import CopilotPipeline
-from dd_copilot.repository import get_research, list_research, persist_research, get_report, list_reports
+from dd_copilot.repository import get_research, list_research, persist_research, persist_report, get_report, list_reports
 from dd_copilot.schemas import CopilotAnswer, EvidencePack, ResearchDetail, ResearchSummary, TimingBreakdown, QueryType
 from dd_copilot.workspace import init_workspace, workspace_paths
 from ingest import ingest_user_file
@@ -105,9 +105,80 @@ def _serialize_user(user: User) -> dict:
     return {"id": user.id, "name": user.name, "email": user.email, "organization": user.organization, "created_at": user.created_at.isoformat()}
 
 
+_PRODUCT_SEGMENTS = [
+    ("iphone_revenue", "iPhone"),
+    ("services_revenue", "Services"),
+    ("wearables_revenue", "Wearables, Home and Accessories"),
+    ("mac_revenue", "Mac"),
+    ("ipad_revenue", "iPad"),
+]
+_GEO_SEGMENTS = [
+    ("americas_revenue", "Americas"),
+    ("europe_revenue", "Europe"),
+    ("greater_china_revenue", "Greater China"),
+    ("japan_revenue", "Japan"),
+    ("rest_of_asia_pacific_revenue", "Rest of Asia Pacific"),
+]
+
+
+def _lookup_company(session, company_id: str) -> Company | None:
+    row = session.get(Company, company_id)
+    if row is not None:
+        return row
+    return session.scalar(select(Company).where(func.lower(Company.name) == company_id.strip().lower()))
+
+
+def _financials_from_facts(facts: list[FinancialFact]) -> tuple[list[dict], dict, list[dict], list[dict]]:
+    years = sorted({f.fiscal_year for f in facts if f.fiscal_year})
+    annual: list[dict] = []
+    for year in years:
+        rows = {f.metric_name: f.value for f in facts if f.fiscal_year == year}
+        revenue = rows.get("total_revenue")
+        op = rows.get("operating_income")
+        net = rows.get("net_income")
+        ocf = rows.get("operating_cash_flow")
+        capex = rows.get("capex")
+        annual.append({
+            "year": year, "revenue": revenue, "operatingIncome": op, "netIncome": net,
+            "operatingCashFlow": ocf, "freeCashFlow": (ocf - capex) if ocf is not None and capex is not None else None,
+            "operatingMargin": (op / revenue * 100) if op is not None and revenue else None,
+            "netMargin": (net / revenue * 100) if net is not None and revenue else None,
+            "revenueGrowth": None,
+        })
+    for i, point in enumerate(annual):
+        if i:
+            prev = annual[i - 1].get("revenue")
+            if prev and point.get("revenue") is not None:
+                point["revenueGrowth"] = (point["revenue"] - prev) / prev * 100
+    latest = annual[-1] if annual else {}
+    latest_year = years[-1] if years else None
+
+    def _segments(pairs: list[tuple[str, str]]) -> list[dict]:
+        items = []
+        for metric, label in pairs:
+            value = next((f.value for f in facts if f.metric_name == metric and f.fiscal_year == latest_year), None)
+            if value is not None:
+                items.append({"name": label, "revenue": value, "year": latest_year})
+        return items
+
+    return annual, latest, _segments(_PRODUCT_SEGMENTS), _segments(_GEO_SEGMENTS)
+
+
+def _serialize_company(company: Company) -> dict:
+    last = ""
+    if company.research_runs:
+        last = max(run.created_at for run in company.research_runs).isoformat()
+    return {
+        "id": company.id, "name": company.name, "ticker": company.ticker, "sector": company.sector,
+        "created_at": company.created_at.isoformat(), "documents_count": len(company.documents),
+        "last_researched": last,
+    }
+
+
 @app.on_event("startup")
 def startup() -> None:
     init_auth_db()
+    seed_admin_user()
 
 
 @app.get("/health")
@@ -160,13 +231,7 @@ def companies(user: User = Depends(current_user)):
     factory = _session_factory(user)
     with factory() as session:
         rows = session.query(Company).order_by(Company.name).all()
-        return [
-            {
-                "id": c.id, "name": c.name, "ticker": c.ticker, "sector": c.sector,
-                "created_at": c.created_at.isoformat(), "documents_count": len(c.documents),
-            }
-            for c in rows
-        ]
+        return [_serialize_company(c) for c in rows]
 
 
 @app.post("/api/companies")
@@ -180,7 +245,41 @@ def create_company(request: CompanyCreate, user: User = Depends(current_user)):
         session.add(company)
         session.commit()
         session.refresh(company)
-        return {"id": company.id, "name": company.name, "ticker": company.ticker, "sector": company.sector}
+        return _serialize_company(company)
+
+
+@app.get("/api/companies/{company_id}")
+def company_detail(company_id: str, user: User = Depends(current_user)):
+    with _session_factory(user)() as session:
+        company = _lookup_company(session, company_id)
+        if company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+        facts = session.query(FinancialFact).filter(FinancialFact.company_id == company.id).all()
+        annual, latest, segments, geography = _financials_from_facts(facts)
+        research_rows = list_research(session, company.name, limit=10)
+        docs = sorted(company.documents, key=lambda d: d.created_at, reverse=True)
+        return {
+            "company": _serialize_company(company),
+            "financials": annual,
+            "latest": latest,
+            "segments": segments,
+            "geography": geography,
+            "documents": [
+                {
+                    "id": d.id, "filename": d.filename, "company_id": d.company_id,
+                    "company_name": company.name, "document_type": d.document_type, "fiscal_year": d.fiscal_year,
+                    "status": d.status, "size_bytes": d.size_bytes, "error_message": d.error_message,
+                    "created_at": d.created_at.isoformat(),
+                    "processed_at": d.processed_at.isoformat() if d.processed_at else None,
+                    "chunk_count": len(d.chunks),
+                }
+                for d in docs
+            ],
+            "recent_research": [
+                {"id": r.id, "query": r.query, "company_id": r.company_id, "company_name": r.company.name, "confidence": r.confidence, "created_at": r.created_at.isoformat()}
+                for r in research_rows
+            ],
+        }
 
 
 @app.post("/ask", response_model=CopilotAnswer)
@@ -188,9 +287,25 @@ def ask(request: AskRequest, user: User = Depends(current_user)):
     try:
         answer = _get_pipeline(user).ask(request.question, request.company)
         company_name = _company_name_from_request_or_answer(request.company, answer)
+        if not company_name:
+            return answer
         with _session_factory(user)() as session:
             research = persist_research(session, answer, company_name)
-        answer.research_id = research.id
+            answer.research_id = research.id
+            try:
+                persist_report(
+                    session,
+                    company_id=research.company_id,
+                    title=(request.question[:120] + ("…" if len(request.question) > 120 else "")),
+                    report_type="AI Research",
+                    summary=answer.answer[:2000],
+                    source_research_id=research.id,
+                    confidence=answer.confidence,
+                    status="completed",
+                    sections=[{"section_type": "analysis", "title": "AI Analysis", "content": answer.answer}],
+                )
+            except Exception:
+                pass
         return answer
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Copilot query failed: {exc}") from exc
@@ -271,7 +386,15 @@ def _update_job(user: User, job_id: str, **values) -> None:
             session.commit()
 
 
-def _process_upload(user_id: str, job_id: str, path: str, company_id: str) -> None:
+def _process_upload(
+    user_id: str,
+    job_id: str,
+    path: str,
+    company_id: str,
+    company_name: str,
+    document_type: str,
+    fiscal_year: int | None,
+) -> None:
     user = None
     with AuthSession() as session:
         user = session.get(User, user_id)
@@ -280,21 +403,28 @@ def _process_upload(user_id: str, job_id: str, path: str, company_id: str) -> No
     file_path = Path(path)
     try:
         _update_job(user, job_id, status="processing", progress=10)
-        result = ingest_user_file(file_path, _vector_store(user), _session_factory(user))
-        _update_job(user, job_id, status="indexed", progress=100)
+        result = ingest_user_file(
+            file_path,
+            _vector_store(user),
+            _session_factory(user),
+            company_name=company_name,
+            document_type=document_type,
+            fiscal_year=fiscal_year,
+        )
+        _pipeline_cache.pop(user.id, None)
         with _session_factory(user)() as session:
             doc = session.scalar(select(Document).where(Document.company_id == company_id, Document.filename == file_path.name).order_by(Document.created_at.desc()))
             if doc:
                 doc.status = "indexed"
                 doc.size_bytes = file_path.stat().st_size
                 doc.content_hash = result["hash"]
+                doc.document_type = document_type
+                doc.fiscal_year = fiscal_year
                 doc.processed_at = datetime.now(timezone.utc)
                 session.commit()
-                _update_job(user, job_id, document_id=doc.id)
-        try:
-            file_path.unlink(missing_ok=True)
-        except OSError:
-            pass
+                _update_job(user, job_id, status="indexed", progress=100, document_id=doc.id)
+            else:
+                _update_job(user, job_id, status="indexed", progress=100)
     except Exception as exc:
         _update_job(user, job_id, status="failed", progress=100, error_message=str(exc))
         with _session_factory(user)() as session:
@@ -319,8 +449,16 @@ async def upload_document(
     if Path(file.filename).suffix.lower() not in config.SUPPORTED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"Unsupported file type. Supported: {sorted(config.SUPPORTED_EXTENSIONS)}")
 
+    with _session_factory(user)() as session:
+        company = _lookup_company(session, company_id)
+        if company is None:
+            raise HTTPException(status_code=404, detail="Company not found")
+        company_name = company.name
+        company_pk = company.id
+
     paths = workspace_paths(user.id)
-    company_dir = paths["data"] / company_id
+    folder = "".join(ch if ch.isalnum() or ch in {" ", "-", "_"} else "_" for ch in company_name).strip() or company_pk
+    company_dir = paths["data"] / folder
     company_dir.mkdir(parents=True, exist_ok=True)
     destination = company_dir / Path(file.filename).name
     temp = destination.with_suffix(destination.suffix + ".uploading")
@@ -347,64 +485,40 @@ async def upload_document(
         await file.close()
 
     with _session_factory(user)() as session:
-        company = session.get(Company, company_id)
-        if company is None:
-            destination.unlink(missing_ok=True)
-            raise HTTPException(status_code=404, detail="Company not found")
-        job = DocumentJob(filename=destination.name, company_id=company.id, status="queued", progress=0)
+        job = DocumentJob(filename=destination.name, company_id=company_pk, status="queued", progress=0)
         session.add(job)
         session.commit()
         session.refresh(job)
         job_id = job.id
 
-    background_tasks.add_task(_process_upload, user.id, job_id, str(destination), company_id)
+    background_tasks.add_task(
+        _process_upload,
+        user.id,
+        job_id,
+        str(destination),
+        company_pk,
+        company_name,
+        document_type,
+        fiscal_year,
+    )
     return {"success": True, "job_id": job_id, "filename": destination.name, "size_bytes": size, "storage": "local"}
 
 
 @app.get("/api/dashboard")
 def dashboard(user: User = Depends(current_user)):
     with _session_factory(user)() as session:
-        latest_research = session.scalar(select(func.max(Document.created_at)))
         company = session.query(Company).order_by(Company.created_at.desc()).first()
         if not company:
-            return {"company": None, "financials": [], "segments": [], "recent_research": []}
+            return {"company": None, "financials": [], "latest": {}, "segments": [], "geography": [], "recent_research": []}
         facts = session.query(FinancialFact).filter(FinancialFact.company_id == company.id).all()
-        years = sorted({f.fiscal_year for f in facts if f.fiscal_year})
-        annual = []
-        by_year = {}
-        for year in years:
-            rows = {f.metric_name: f.value for f in facts if f.fiscal_year == year}
-            revenue = rows.get("total_revenue")
-            op = rows.get("operating_income")
-            net = rows.get("net_income")
-            ocf = rows.get("operating_cash_flow")
-            capex = rows.get("capex")
-            point = {
-                "year": year, "revenue": revenue, "operatingIncome": op, "netIncome": net,
-                "operatingCashFlow": ocf, "freeCashFlow": (ocf - capex) if ocf is not None and capex is not None else None,
-                "operatingMargin": (op / revenue * 100) if op is not None and revenue else None,
-                "netMargin": (net / revenue * 100) if net is not None and revenue else None,
-                "revenueGrowth": None,
-            }
-            by_year[year] = point
-            annual.append(point)
-        for i, point in enumerate(annual):
-            if i:
-                prev = annual[i - 1].get("revenue")
-                if prev and point.get("revenue") is not None:
-                    point["revenueGrowth"] = (point["revenue"] - prev) / prev * 100
-        latest = annual[-1] if annual else {}
-        segments = []
-        for metric, label in [("iphone_revenue", "iPhone"), ("services_revenue", "Services"), ("wearables_revenue", "Wearables, Home and Accessories"), ("mac_revenue", "Mac"), ("ipad_revenue", "iPad")]:
-            value = next((f.value for f in facts if f.metric_name == metric and f.fiscal_year == (years[-1] if years else None)), None)
-            if value is not None:
-                segments.append({"name": label, "revenue": value, "year": years[-1]})
+        annual, latest, segments, geography = _financials_from_facts(facts)
         research_rows = list_research(session, limit=10)
         return {
-            "company": {"id": company.id, "name": company.name, "ticker": company.ticker, "sector": company.sector, "documents_count": len(company.documents)},
+            "company": _serialize_company(company),
             "financials": annual,
             "latest": latest,
             "segments": segments,
+            "geography": geography,
             "recent_research": [
                 {"id": r.id, "query": r.query, "company_id": r.company_id, "company_name": r.company.name, "confidence": r.confidence, "created_at": r.created_at.isoformat()}
                 for r in research_rows

@@ -62,7 +62,7 @@ export default function AnalysesPage() {
                       <span className="text-xs text-muted-foreground">Not yet run</span>
                     )}
                     <Button size="sm" variant="outline" asChild>
-                      <Link href="/research">
+                      <Link href={`/research?q=${encodeURIComponent(analysis.title)}`}>
                         <Play className="h-3 w-3 mr-1" />
                         Run Analysis
                       </Link>

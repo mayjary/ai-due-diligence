@@ -89,6 +89,7 @@ class TimingBreakdown(BaseModel):
 
 class CopilotAnswer(BaseModel):
     research_id: str | None = None
+    question: str = ""
     answer: str
     query_type: QueryType
     evidence_pack: EvidencePack

@@ -13,6 +13,22 @@ Design decision:
 import os
 from pathlib import Path
 
+
+def _load_dotenv() -> None:
+    """Load local .env values without overriding a real process environment."""
+    env_file = Path(__file__).resolve().parent / ".env"
+    if not env_file.exists():
+        return
+    for raw in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("'").strip('"'))
+
+
+_load_dotenv()
+
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------

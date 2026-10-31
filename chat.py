@@ -28,6 +28,27 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import OllamaLLM
 
 import config
+
+
+def _ollama_unreachable(exc: BaseException) -> bool:
+    """True when the chat model could not connect to the local Ollama server."""
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        name = type(current).__name__.lower()
+        message = str(current).lower()
+        if "connecterror" in name or "connection refused" in message or "connecterror" in message:
+            return True
+        current = current.__cause__ or current.__context__
+    return False
+
+
+def _ollama_down_message() -> str:
+    return (
+        f"Ollama is not running at {config.OLLAMA_BASE_URL}. "
+        "Start it with `ollama serve` (or open the Ollama app), then ask again."
+    )
 import retrieve
 import utils
 from dd_copilot.pipeline import CopilotPipeline
@@ -163,7 +184,12 @@ def run_chat() -> None:
             except Exception as exc:
                 logger.exception("Copilot pipeline failed: %s", exc)
                 elapsed_seconds = time.perf_counter() - request_started
-                print(_append_performance_footer("Sorry, the copilot failed to generate an answer. Check logs for details.", elapsed_seconds))
+                message = (
+                    _ollama_down_message()
+                    if _ollama_unreachable(exc)
+                    else "Sorry, the copilot failed to generate an answer. Check logs for details."
+                )
+                print(_append_performance_footer(message, elapsed_seconds))
             continue
 
         try:
@@ -206,11 +232,12 @@ def run_chat() -> None:
         except Exception as exc:
             logger.error("LLM generation failed: %s", exc)
             elapsed_seconds = time.perf_counter() - request_started
-            message = _append_performance_footer(
-                "Sorry, the model failed to generate an answer. Check the logs for details.",
-                elapsed_seconds,
+            detail = (
+                _ollama_down_message()
+                if _ollama_unreachable(exc)
+                else "Sorry, the model failed to generate an answer. Check the logs for details."
             )
-            print(message)
+            print(_append_performance_footer(detail, elapsed_seconds))
             continue
 
         elapsed_seconds = time.perf_counter() - request_started

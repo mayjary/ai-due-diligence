@@ -18,7 +18,13 @@ import type { FinancialDataPoint } from '@/lib/types';
 
 const axisStyle = { fontSize: 11, fill: 'hsl(215 14% 55%)' };
 
-function formatCurrency(value: number) {
+function numericValue(value: number | string | readonly (number | string)[] | undefined) {
+  const scalar = Array.isArray(value) ? value[0] : value;
+  return typeof scalar === 'number' ? scalar : Number(scalar || 0);
+}
+
+function formatCurrency(value: number | string | readonly (number | string)[] | undefined) {
+  value = numericValue(value);
   if (value >= 1000) return `$${(value / 1000).toFixed(1)}T`;
   return `$${value.toFixed(1)}B`;
 }
@@ -42,7 +48,7 @@ export function RevenueChart({ data, height = 220 }: RevenueChartProps) {
         <XAxis dataKey="year" tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={formatCurrency} tick={axisStyle} axisLine={false} tickLine={false} width={50} />
         <Tooltip
-          formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+          formatter={(value) => [formatCurrency(value), 'Revenue']}
           contentStyle={{
             backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
@@ -75,7 +81,7 @@ export function OperatingIncomeChart({ data, height = 220 }: OperatingIncomeChar
         <XAxis dataKey="year" tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={formatCurrency} tick={axisStyle} axisLine={false} tickLine={false} width={50} />
         <Tooltip
-          formatter={(value: number) => [formatCurrency(value), 'Operating Income']}
+          formatter={(value) => [formatCurrency(value), 'Operating Income']}
           contentStyle={{
             backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
@@ -108,7 +114,7 @@ export function CashFlowChart({ data, height = 220 }: CashFlowChartProps) {
         <XAxis dataKey="year" tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={formatCurrency} tick={axisStyle} axisLine={false} tickLine={false} width={50} />
         <Tooltip
-          formatter={(value: number) => formatCurrency(value)}
+          formatter={(value) => formatCurrency(value)}
           contentStyle={{
             backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
@@ -141,9 +147,9 @@ export function MarginChart({ data, height = 220 }: MarginChartProps) {
       <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="year" tick={axisStyle} axisLine={false} tickLine={false} />
-        <YAxis tickFormatter={(v: number) => `${v.toFixed(0)}%`} tick={axisStyle} axisLine={false} tickLine={false} width={40} />
+        <YAxis tickFormatter={(v) => `${numericValue(v).toFixed(0)}%`} tick={axisStyle} axisLine={false} tickLine={false} width={40} />
         <Tooltip
-          formatter={(value: number) => `${value.toFixed(1)}%`}
+          formatter={(value) => `${numericValue(value).toFixed(1)}%`}
           contentStyle={{
             backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
@@ -180,7 +186,7 @@ export function SegmentChart({ data, height = 220 }: SegmentChartProps) {
         <XAxis type="number" tickFormatter={formatCurrency} tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis type="category" dataKey="name" tick={axisStyle} axisLine={false} tickLine={false} width={80} />
         <Tooltip
-          formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+          formatter={(value) => [formatCurrency(value), 'Revenue']}
           contentStyle={{
             backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
@@ -211,7 +217,7 @@ export function GeographicChart({ data, height = 220 }: GeographicChartProps) {
         <XAxis dataKey="region" tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={formatCurrency} tick={axisStyle} axisLine={false} tickLine={false} width={50} />
         <Tooltip
-          formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+          formatter={(value) => [formatCurrency(value), 'Revenue']}
           contentStyle={{
             backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
@@ -241,7 +247,7 @@ export function SimpleAreaChart({ data, height = 200, color, label, format = 'cu
   const chartColor = color || 'hsl(var(--chart-1))';
   const gradientId = `gradient-${label || 'data'}`.replace(/\s/g, '-').toLowerCase();
   const formatter = format === 'percentage'
-    ? (v: number) => `${v.toFixed(1)}%`
+    ? (v: number | string | readonly (number | string)[] | undefined) => `${numericValue(v).toFixed(1)}%`
     : formatCurrency;
 
   return (
@@ -257,7 +263,7 @@ export function SimpleAreaChart({ data, height = 200, color, label, format = 'cu
         <XAxis dataKey="year" tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={formatter} tick={axisStyle} axisLine={false} tickLine={false} width={50} />
         <Tooltip
-          formatter={(value: number) => [formatter(value), label || 'Value']}
+          formatter={(value) => [formatter(value), label || 'Value']}
           contentStyle={{
             backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',
@@ -281,10 +287,10 @@ interface ComparisonBarChartProps {
 
 export function ComparisonBarChart({ data, height = 300, labelA = 'Company A', labelB = 'Company B', format = 'currency' }: ComparisonBarChartProps) {
   const formatter = format === 'percentage'
-    ? (v: number) => `${v.toFixed(1)}%`
+    ? (v: number | string | readonly (number | string)[] | undefined) => `${numericValue(v).toFixed(1)}%`
     : format === 'currency'
     ? formatCurrency
-    : (v: number) => v.toFixed(1);
+    : (v: number | string | readonly (number | string)[] | undefined) => numericValue(v).toFixed(1);
 
   return (
     <ResponsiveContainer width="100%" height={height}>
@@ -293,7 +299,7 @@ export function ComparisonBarChart({ data, height = 300, labelA = 'Company A', l
         <XAxis dataKey="label" tick={axisStyle} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={formatter} tick={axisStyle} axisLine={false} tickLine={false} width={50} />
         <Tooltip
-          formatter={(value: number) => formatter(value)}
+          formatter={(value) => formatter(value)}
           contentStyle={{
             backgroundColor: 'hsl(var(--popover))',
             border: '1px solid hsl(var(--border))',

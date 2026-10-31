@@ -62,9 +62,85 @@ function sourceFromCitation(c: any, score = 0): Source {
   return { id: c.id, documentName: c.document_filename || 'Unknown document', documentType: c.document_type || 'Other', page: c.page_number || 0, section: c.section_name || '', chunkId: c.chunk_id || '', relevanceScore: score, excerpt: c.source_text || '', year: c.fiscal_year || 0 };
 }
 
+function mapCompany(c: any): Company {
+  return {
+    id: c.id,
+    name: c.name,
+    ticker: c.ticker || '',
+    sector: (c.sector || 'Technology') as Company['sector'],
+    exchange: '',
+    lastResearched: c.last_researched ? new Date(c.last_researched).toLocaleString() : 'Never',
+    documentsCount: c.documents_count || 0,
+    riskLevel: 'Medium',
+    status: 'active',
+    description: '',
+  };
+}
+
+function mapDocument(d: any): DocumentRow {
+  return {
+    id: d.id,
+    name: d.filename || d.name,
+    companyId: d.company_id,
+    companyName: d.company_name,
+    type: d.document_type || 'Other',
+    year: d.fiscal_year || 0,
+    pages: d.pages || 0,
+    chunks: d.chunk_count || d.chunks || 0,
+    status: d.status || 'indexed',
+    uploaded: d.created_at || d.uploaded,
+    size: d.size_bytes ? `${(d.size_bytes / 1024 / 1024).toFixed(1)} MB` : (d.size || ''),
+  };
+}
+
+function mapResearchResult(r: any, fallback?: { query?: string; companyId?: string; companyName?: string; companyTicker?: string }): ResearchResult {
+  const citations = r.evidence_pack?.citations || [];
+  const chunks = r.evidence_pack?.evidence_chunks || [];
+  const scores = new Map(chunks.map((c: any) => [c.id, c.score || 0]));
+  const sources = citations.map((c: any) => sourceFromCitation(c, Number(scores.get(c.chunk_id) || 0)));
+  return {
+    id: r.research_id || r.id,
+    query: r.question || r.query || fallback?.query || '',
+    companyId: r.company_id || fallback?.companyId || '',
+    companyName: r.company_name || fallback?.companyName || '',
+    companyTicker: fallback?.companyTicker || '',
+    executiveFinding: r.answer || r.executiveFinding || '',
+    findings: [],
+    financialEvidence: (r.evidence_pack?.facts || []).map((f: any) => ({
+      label: f.metric_name,
+      values: [{ year: f.fiscal_year || 0, value: f.value }],
+      unit: 'currency',
+    })),
+    risks: [],
+    contradictions: [],
+    conclusion: r.answer || '',
+    sources,
+    timestamp: r.created_at || new Date().toISOString(),
+    confidence: (r.confidence ?? 0) * (r.confidence > 1 ? 1 : 100),
+  };
+}
+
 export async function getCompanies(): Promise<Company[]> {
   const rows = await apiFetch<any[]>('/api/companies');
-  return rows.map((c) => ({ id: c.id, name: c.name, ticker: c.ticker || '', sector: c.sector || 'Technology', exchange: '', lastResearched: '', documentsCount: c.documents_count || 0, riskLevel: 'Medium', status: 'active', description: '' }));
+  return rows.map(mapCompany);
+}
+
+export async function createCompany(input: { name: string; ticker?: string; sector?: string }): Promise<Company> {
+  const row = await apiFetch<any>('/api/companies', { method: 'POST', body: JSON.stringify(input) });
+  return mapCompany(row);
+}
+
+export async function getCompanyWorkspace(id: string) {
+  const data = await apiFetch<any>(`/api/companies/${encodeURIComponent(id)}`);
+  return {
+    company: mapCompany(data.company),
+    financials: data.financials || [],
+    latest: data.latest || {},
+    segments: data.segments || [],
+    geography: data.geography || [],
+    documents: (data.documents || []).map(mapDocument),
+    recent_research: data.recent_research || [],
+  };
 }
 
 export async function getDashboard(): Promise<DashboardData> { return apiFetch<DashboardData>('/api/dashboard'); }
@@ -76,24 +152,25 @@ export async function getRecentResearch(): Promise<ResearchQuery[]> {
   return rows.map((r) => ({ id: r.id, question: r.query, companyId: r.company_id, companyName: r.company_name, companyTicker: '', analysisType: r.query_type, status: r.status === 'completed' ? 'completed' : 'in_progress', timestamp: r.created_at, confidence: r.confidence * 100 }));
 }
 
-export async function runResearch(query: string, companyId: string): Promise<ResearchResult> {
-  const company = (await getCompanies()).find((c) => c.id === companyId);
-  if (!company) throw new Error('Company not found');
-  const response = await apiFetch<any>('/ask', { method: 'POST', body: JSON.stringify({ question: query, company: company.name }) });
-  const citations = response.evidence_pack?.citations || [];
-  const chunks = response.evidence_pack?.evidence_chunks || [];
-  const scores = new Map(chunks.map((c: any) => [c.id, c.score || 0]));
-  const sources = citations.map((c: any) => sourceFromCitation(c, scores.get(c.chunk_id) || 0));
-  return { id: response.research_id, query, companyId: company.id, companyName: company.name, companyTicker: company.ticker, executiveFinding: response.answer, findings: [], financialEvidence: [], risks: [], contradictions: [], conclusion: response.answer, sources, timestamp: new Date().toISOString(), confidence: response.confidence * 100 };
+export async function runResearch(query: string, companyId?: string): Promise<ResearchResult> {
+  const companies = await getCompanies();
+  const company = companyId ? companies.find((c) => c.id === companyId) : undefined;
+  const response = await apiFetch<any>('/ask', {
+    method: 'POST',
+    body: JSON.stringify({ question: query, company: company?.name || null }),
+  });
+  return mapResearchResult(response, {
+    query,
+    companyId: company?.id,
+    companyName: company?.name,
+    companyTicker: company?.ticker,
+  });
 }
 
 export async function getResearchResult(id: string): Promise<ResearchResult | null> {
   try {
     const r = await apiFetch<any>(`/api/research/${id}`);
-    const chunks = r.evidence_pack?.evidence_chunks || [];
-    const scores = new Map(chunks.map((c: any) => [c.id, c.score || 0]));
-    const sources = (r.evidence_pack?.citations || []).map((c: any) => sourceFromCitation(c, scores.get(c.chunk_id) || 0));
-    return { id: r.id, query: r.query, companyId: r.company_id, companyName: r.company_name, companyTicker: '', executiveFinding: r.answer, findings: [], financialEvidence: [], risks: [], contradictions: [], conclusion: r.answer, sources, timestamp: r.created_at, confidence: r.confidence * 100 };
+    return mapResearchResult(r);
   } catch { return null; }
 }
 
@@ -111,7 +188,7 @@ export async function getAnalysisTypes(): Promise<AnalysisType[]> { return []; }
 
 export async function getDocuments(): Promise<DocumentRow[]> {
   const rows = await apiFetch<any[]>('/api/documents');
-  return rows.map((d) => ({ id: d.id, name: d.filename, companyId: d.company_id, companyName: d.company_name, type: d.document_type || 'Other', year: d.fiscal_year || 0, pages: 0, chunks: d.chunk_count || 0, status: d.status || 'indexed', uploaded: d.created_at, size: d.size_bytes ? `${(d.size_bytes / 1024 / 1024).toFixed(1)} MB` : '', }));
+  return rows.map(mapDocument);
 }
 
 export async function uploadDocument(file: File, companyId: string, documentType: string, fiscalYear: number | null): Promise<{ success: boolean; job_id: string; filename: string; size_bytes: number; storage: string }> {
@@ -124,4 +201,17 @@ export async function uploadDocument(file: File, companyId: string, documentType
 }
 
 export async function getUploadJob(id: string) { return apiFetch<any>(`/api/documents/jobs/${id}`); }
-export async function getWatchlist(): Promise<WatchlistItem[]> { return []; }
+export async function getWatchlist(): Promise<WatchlistItem[]> {
+  const companies = await getCompanies();
+  return companies.map((c) => ({
+    companyId: c.id,
+    name: c.name,
+    ticker: c.ticker,
+    sector: c.sector,
+    price: '—',
+    revenue: '—',
+    growth: '—',
+    risk: c.riskLevel,
+    lastResearch: c.lastResearched,
+  }));
+}
