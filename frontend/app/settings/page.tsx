@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +9,13 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { User, Lock, Palette, Bell, Shield, Brain } from 'lucide-react';
+import { getCurrentUser } from '@/lib/api/client';
+import type { User as Account } from '@/lib/types';
 
 export default function SettingsPage() {
+  const [account, setAccount] = useState<Account | null>(null);
+  useEffect(() => { getCurrentUser().then(setAccount).catch(() => {}); }, []);
+
   return (
     <AppShell>
       <div className="space-y-6 max-w-3xl">
@@ -27,23 +33,20 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" defaultValue="Morgan Kane" className="bg-background" />
+              <Input id="name" value={account?.name || ''} readOnly className="bg-background" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="morgan@firm.com" className="bg-background" />
+              <Input id="email" type="email" value={account?.email || ''} readOnly className="bg-background" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="org">Organization</Label>
-              <Input id="org" defaultValue="Kane Capital Partners" className="bg-background" />
+              <Input id="org" value={account?.organization || ''} readOnly className="bg-background" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Input id="role" defaultValue="Senior Analyst" className="bg-background" />
+              <Input id="role" value="Workspace Admin" readOnly className="bg-background" />
             </div>
-          </div>
-          <div className="mt-4">
-            <Button size="sm">Save Changes</Button>
           </div>
         </div>
 

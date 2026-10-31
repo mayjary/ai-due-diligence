@@ -58,6 +58,30 @@ def init_auth_db() -> None:
     AuthBase.metadata.create_all(_engine())
 
 
+def seed_admin_user() -> User | None:
+    """Create the local admin account if it does not already exist."""
+    from sqlalchemy import func
+
+    init_auth_db()
+    email = os.environ.get("DD_ADMIN_EMAIL", "admin@ddcopilot.local").strip().lower()
+    password = os.environ.get("DD_ADMIN_PASSWORD", "Admin12345!")
+    name = os.environ.get("DD_ADMIN_NAME", "Workspace Admin")
+    organization = os.environ.get("DD_ADMIN_ORGANIZATION", "Local Workspace")
+    with AuthSession() as session:
+        existing = session.scalar(select(User).where(User.email == email))
+        if existing is not None:
+            return existing
+        is_first_user = session.scalar(select(func.count(User.id))) == 0
+        user = User(name=name, email=email, organization=organization, password_hash=_hash_password(password))
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+        user_id = user.id
+    from dd_copilot.workspace import init_workspace
+    init_workspace(user_id, claim_legacy=is_first_user)
+    return get_user(user_id)
+
+
 def _hash_password(password: str) -> str:
     salt = secrets.token_bytes(16)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 310_000)

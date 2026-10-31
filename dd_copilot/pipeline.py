@@ -30,7 +30,11 @@ class CopilotPipeline:
 
     def _client(self) -> Any:
         if self.llm is None:
-            self.llm = OllamaLLM(model=config.LLM_MODEL, base_url=config.OLLAMA_BASE_URL)
+            self.llm = OllamaLLM(
+                model=config.LLM_MODEL,
+                base_url=config.OLLAMA_BASE_URL,
+                timeout=config.LLM_TIMEOUT_SECONDS,
+            )
         return self.llm
 
     @staticmethod
@@ -87,4 +91,14 @@ class CopilotPipeline:
         timings.citation_validation_ms = round((perf_counter() - started) * 1000, 2)
         score, reason = confidence(pack)
         timings.total_ms = round((perf_counter() - total_started) * 1000, 2)
-        return CopilotAnswer(answer=answer, query_type=query_type, evidence_pack=pack, citations_valid=citations_valid, confidence=score, confidence_reason=reason, timings=timings, warnings=warnings)
+        return CopilotAnswer(
+            question=question,
+            answer=answer,
+            query_type=query_type,
+            evidence_pack=pack,
+            citations_valid=citations_valid,
+            confidence=score,
+            confidence_reason=reason,
+            timings=timings,
+            warnings=warnings,
+        )

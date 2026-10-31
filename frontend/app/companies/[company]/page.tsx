@@ -1,142 +1,99 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/app-shell';
 import { CompanyHeader } from '@/components/shared/company-header';
 import { MetricCard } from '@/components/shared/metric-card';
-import { InsightCard } from '@/components/shared/insight-card';
 import { ConfidenceBadge } from '@/components/shared/confidence-badge';
-import { RiskBadge } from '@/components/shared/risk-badge';
-import { RevenueChart, OperatingIncomeChart, CashFlowChart, GeographicChart, SegmentChart } from '@/components/shared/charts';
+import { RevenueChart, SegmentChart } from '@/components/shared/charts';
 import { CompanySkeleton } from '@/components/shared/loading-skeletons';
+import { EmptyState } from '@/components/shared/empty-state';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Search, TrendingUp, FileText, ArrowRight, ShieldAlert, DollarSign, Users } from 'lucide-react';
-import { companies, getCompanyById, appleFinancials, appleGeographic, appleInsights, appleSegments } from '@/lib/mock';
+import { Search, FileText } from 'lucide-react';
+import { getCompanyWorkspace } from '@/lib/api/client';
+import type { Company, FinancialDataPoint } from '@/lib/types';
+
+function asFinancials(rows: any[]): FinancialDataPoint[] {
+  return rows.map((d) => ({
+    year: d.year,
+    revenue: (d.revenue || 0) / 1000,
+    operatingIncome: (d.operatingIncome || 0) / 1000,
+    netIncome: (d.netIncome || 0) / 1000,
+    operatingCashFlow: (d.operatingCashFlow || 0) / 1000,
+    freeCashFlow: (d.freeCashFlow || 0) / 1000,
+    grossProfit: 0, cogs: 0, operatingExpenses: 0, capex: 0, debt: 0, cash: 0,
+    shareRepurchases: 0, dividends: 0, grossMargin: 0,
+    operatingMargin: d.operatingMargin || 0,
+    netMargin: d.netMargin || 0,
+    revenueGrowth: d.revenueGrowth || 0,
+  }));
+}
 
 export default function CompanyWorkspacePage({ params }: { params: Promise<{ company: string }> }) {
   const { company: companyId } = use(params);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [data, setData] = useState<Awaited<ReturnType<typeof getCompanyWorkspace>> | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 400);
-    return () => clearTimeout(t);
-  }, []);
+    getCompanyWorkspace(companyId).then(setData).catch((e) => setError(e.message)).finally(() => setLoading(false));
+  }, [companyId]);
 
-  const company = getCompanyById(companyId) || companies[0];
-  const financials = appleFinancials;
-  const latest = financials[financials.length - 1];
+  if (loading) return <AppShell><CompanySkeleton /></AppShell>;
+  if (error || !data) return <AppShell><div className="rounded-md border border-destructive/30 bg-destructive/5 p-5 text-sm text-destructive">{error || 'Company not found'}</div></AppShell>;
 
-  if (loading) {
-    return (
-      <AppShell company={company}>
-        <CompanySkeleton />
-      </AppShell>
-    );
-  }
+  const company = data.company as Company;
+  const financials = asFinancials(data.financials);
+  const latest: any = data.latest || {};
+  const segments = (data.segments || []).map((s: any) => ({ ...s, revenue: s.revenue / 1000, share: latest.revenue ? s.revenue / latest.revenue * 100 : 0, growth: 0 }));
 
   return (
     <AppShell company={company}>
       <div className="space-y-6">
         <CompanyHeader company={company} />
-
-        {/* Action buttons */}
         <div className="flex gap-2">
-          <Button size="sm" asChild>
-            <Link href="/research">
-              <Search className="h-3.5 w-3.5 mr-1" />
-              Research
-            </Link>
-          </Button>
-          <Button size="sm" variant="outline" asChild>
-            <Link href={`/companies/${companyId}/financials`}>
-              <TrendingUp className="h-3.5 w-3.5 mr-1" />
-              Analyze
-            </Link>
-          </Button>
-          <Button size="sm" variant="outline" asChild>
-            <Link href="/reports">
-              <FileText className="h-3.5 w-3.5 mr-1" />
-              Generate Memo
-            </Link>
-          </Button>
+          <Button size="sm" asChild><Link href={`/research?company=${company.id}`}><Search className="h-3.5 w-3.5 mr-1" />Research</Link></Button>
+          <Button size="sm" variant="outline" asChild><Link href={`/companies/${companyId}/financials`}>Financials</Link></Button>
+          <Button size="sm" variant="outline" asChild><Link href={`/companies/${companyId}/documents`}><FileText className="h-3.5 w-3.5 mr-1" />Documents</Link></Button>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="bg-card border border-border">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="financials" onClick={() => window.location.href = `/companies/${companyId}/financials`}>Financials</TabsTrigger>
-            <TabsTrigger value="risks" onClick={() => window.location.href = `/companies/${companyId}/risks`}>Risks</TabsTrigger>
-            <TabsTrigger value="management" onClick={() => window.location.href = `/companies/${companyId}/management`}>Management</TabsTrigger>
-            <TabsTrigger value="documents" onClick={() => window.location.href = `/companies/${companyId}/documents`}>Documents</TabsTrigger>
-            <TabsTrigger value="ai-research" onClick={() => window.location.href = '/research'}>AI Research</TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard label="Revenue" value={latest.revenue != null ? `$${(latest.revenue / 1000).toFixed(1)}B` : '—'} change={latest.revenueGrowth != null ? `${latest.revenueGrowth >= 0 ? '+' : ''}${Number(latest.revenueGrowth).toFixed(1)}%` : undefined} changeDirection={latest.revenueGrowth >= 0 ? 'up' : 'down'} />
+          <MetricCard label="Operating Income" value={latest.operatingIncome != null ? `$${(latest.operatingIncome / 1000).toFixed(1)}B` : '—'} />
+          <MetricCard label="Net Income" value={latest.netIncome != null ? `$${(latest.netIncome / 1000).toFixed(1)}B` : '—'} />
+          <MetricCard label="Documents" value={String(company.documentsCount)} />
+        </div>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 mt-4">
-            {/* Snapshot metrics */}
-            <div>
-              <h3 className="text-sm font-medium text-foreground mb-3">Company Snapshot</h3>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-                <MetricCard label="Revenue" value={`$${latest.revenue.toFixed(1)}B`} change="+2.0%" changeDirection="up" />
-                <MetricCard label="Operating Income" value={`$${latest.operatingIncome.toFixed(1)}B`} change="+7.8%" changeDirection="up" />
-                <MetricCard label="Net Income" value={`$${latest.netIncome.toFixed(1)}B`} change="-3.4%" changeDirection="down" />
-                <MetricCard label="Operating Cash Flow" value={`$${latest.operatingCashFlow.toFixed(1)}B`} change="+7.0%" changeDirection="up" />
-                <MetricCard label="Cash & Securities" value={`$${latest.cash.toFixed(1)}B`} change="+3.2%" changeDirection="up" />
-              </div>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="rounded-md border border-border bg-card p-5">
+            <h3 className="mb-4 text-sm font-medium">Revenue Trend</h3>
+            {financials.length ? <RevenueChart data={financials} /> : <p className="text-sm text-muted-foreground">Upload a filing with financial tables to populate this chart.</p>}
+          </div>
+          <div className="rounded-md border border-border bg-card p-5">
+            <h3 className="mb-4 text-sm font-medium">Business Segments</h3>
+            {segments.length ? <SegmentChart data={segments} /> : <p className="text-sm text-muted-foreground">No product-segment facts extracted yet.</p>}
+          </div>
+        </div>
+
+        <div className="rounded-md border border-border bg-card p-5">
+          <h3 className="mb-3 text-sm font-medium">Recent research</h3>
+          {data.recent_research.length ? (
+            <div className="space-y-2">
+              {data.recent_research.map((r: any) => (
+                <Link key={r.id} href={`/research?id=${r.id}`} className="flex items-center justify-between rounded border border-border p-3 hover:border-primary/30">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm">{r.query}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</p>
+                  </div>
+                  <ConfidenceBadge confidence={r.confidence * 100} />
+                </Link>
+              ))}
             </div>
-
-            {/* Charts */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <div className="rounded-md border border-border bg-card p-5">
-                <h3 className="text-sm font-medium text-foreground mb-1">Revenue Trend</h3>
-                <p className="text-xs text-muted-foreground mb-4">FY2022–FY2024</p>
-                <RevenueChart data={financials} />
-              </div>
-              <div className="rounded-md border border-border bg-card p-5">
-                <h3 className="text-sm font-medium text-foreground mb-1">Operating Income Trend</h3>
-                <p className="text-xs text-muted-foreground mb-4">FY2022–FY2024</p>
-                <OperatingIncomeChart data={financials} />
-              </div>
-              <div className="rounded-md border border-border bg-card p-5">
-                <h3 className="text-sm font-medium text-foreground mb-1">Cash Flow Trend</h3>
-                <p className="text-xs text-muted-foreground mb-4">FY2022–FY2024</p>
-                <CashFlowChart data={financials} />
-              </div>
-              <div className="rounded-md border border-border bg-card p-5">
-                <h3 className="text-sm font-medium text-foreground mb-1">Geographic Revenue</h3>
-                <p className="text-xs text-muted-foreground mb-4">FY2024 by region</p>
-                <GeographicChart data={appleGeographic} />
-              </div>
-            </div>
-
-            {/* Business Segments */}
-            <div className="rounded-md border border-border bg-card p-5">
-              <h3 className="text-sm font-medium text-foreground mb-1">Business Segments</h3>
-              <p className="text-xs text-muted-foreground mb-4">Revenue by product category (FY2024)</p>
-              <SegmentChart data={appleSegments} height={200} />
-            </div>
-
-            {/* Key AI Findings */}
-            <div>
-              <h3 className="text-sm font-medium text-foreground mb-3">Key AI Findings</h3>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {appleInsights.map((insight) => (
-                  <InsightCard key={insight.id} insight={insight} onViewEvidence={() => {}} />
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Placeholder tabs - redirect handled by onClick */}
-          <TabsContent value="financials"></TabsContent>
-          <TabsContent value="risks"></TabsContent>
-          <TabsContent value="management"></TabsContent>
-          <TabsContent value="documents"></TabsContent>
-          <TabsContent value="ai-research"></TabsContent>
-        </Tabs>
+          ) : (
+            <EmptyState icon="research" title="No research yet" description="Open research chat and ask a question about this company’s documents." />
+          )}
+        </div>
       </div>
     </AppShell>
   );

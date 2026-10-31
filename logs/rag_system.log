@@ -1,0 +1,776 @@
+2026-10-16 21:55:03 | INFO     | rag_system | Discovered 4 candidate file(s) under /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data
+2026-10-16 21:55:05 | INFO     | rag_system | Loaded 121 document(s) from /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Apple/apple_10k.pdf
+2026-10-16 21:55:05 | ERROR    | rag_system | Embedding/insertion failed for /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Apple/apple_10k.pdf: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download
+2026-10-16 21:55:05 | INFO     | rag_system | Loaded 123 document(s) from /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Restaurant/realistic_restaurant_reviews.csv
+2026-10-16 21:55:05 | ERROR    | rag_system | Embedding/insertion failed for /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Restaurant/realistic_restaurant_reviews.csv: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download
+2026-10-16 21:55:05 | ERROR    | rag_system | Could not open Excel file /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Microsoft/0001193125-26-282773.xls: `Import xlrd` failed. Install xlrd >= 2.0.1 for xls Excel support Use pip or conda to install the xlrd package.
+2026-10-16 21:55:05 | INFO     | rag_system | Loaded 0 document(s) from /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Microsoft/0001193125-26-282773.xls
+2026-10-16 21:55:05 | WARNING  | rag_system | No content extracted from /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Microsoft/0001193125-26-282773.xls; not indexed.
+2026-10-16 21:55:06 | INFO     | rag_system | Loaded 30 document(s) from /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Tesla/TSLA-Q1-2026-Update.pdf
+2026-10-16 21:55:06 | ERROR    | rag_system | Embedding/insertion failed for /Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/data/Tesla/TSLA-Q1-2026-Update.pdf: Failed to connect to Ollama. Please check that Ollama is downloaded, running and accessible. https://ollama.com/download
+2026-10-16 21:55:06 | INFO     | rag_system | Ingestion complete in 3.53s | discovered=4 indexed=0 skipped_unchanged=0 failed=4 chunks=0
+2026-10-18 19:31:22 | ERROR    | rag_system | Copilot pipeline failed: (sqlite3.OperationalError) no such column: documents.status
+[SQL: SELECT documents.id AS documents_id, documents.company_id AS documents_company_id, documents.filename AS documents_filename, documents.document_type AS documents_document_type, documents.fiscal_year AS documents_fiscal_year, documents.storage_path AS documents_storage_path, documents.status AS documents_status, documents.size_bytes AS documents_size_bytes, documents.content_hash AS documents_content_hash, documents.error_message AS documents_error_message, documents.processed_at AS documents_processed_at, documents.created_at AS documents_created_at 
+FROM documents 
+WHERE documents.id IN (?)]
+[parameters: ('5ea6798a-a0db-4c03-b715-25734adb081e',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: documents.status
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/chat.py", line 156, in run_chat
+    result = copilot_pipeline.ask(user_input, company=company)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/pipeline.py", line 49, in ask
+    corpus = [self._as_retrieved(chunk) for chunk in chunks_for_company(session, company)]
+                                                     ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/repository.py", line 62, in chunks_for_company
+    return list(session.scalars(stmt).unique())
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/result.py", line 551, in iterrows
+    for raw_row in self._fetchiter_impl():
+                   ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/loading.py", line 247, in chunks
+    post_load.invoke(context, path)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/loading.py", line 1564, in invoke
+    loader(
+    ~~~~~~^
+        effective_context, path, states, self.load_keys, *arg, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/strategies.py", line 3341, in _load_for_path
+    self._load_via_child(
+    ~~~~~~~~~~~~~~~~~~~~^
+        our_states,
+        ^^^^^^^^^^^
+    ...<4 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/strategies.py", line 3372, in _load_via_child
+    for k, v in context.session.execute(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        q,
+        ^^
+    ...<6 lines>...
+        execution_options=execution_options,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ).unique()
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2373, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: documents.status
+[SQL: SELECT documents.id AS documents_id, documents.company_id AS documents_company_id, documents.filename AS documents_filename, documents.document_type AS documents_document_type, documents.fiscal_year AS documents_fiscal_year, documents.storage_path AS documents_storage_path, documents.status AS documents_status, documents.size_bytes AS documents_size_bytes, documents.content_hash AS documents_content_hash, documents.error_message AS documents_error_message, documents.processed_at AS documents_processed_at, documents.created_at AS documents_created_at 
+FROM documents 
+WHERE documents.id IN (?)]
+[parameters: ('5ea6798a-a0db-4c03-b715-25734adb081e',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-10-19 21:14:56 | ERROR    | rag_system | Copilot pipeline failed: (sqlite3.OperationalError) no such column: documents.status
+[SQL: SELECT documents.id AS documents_id, documents.company_id AS documents_company_id, documents.filename AS documents_filename, documents.document_type AS documents_document_type, documents.fiscal_year AS documents_fiscal_year, documents.storage_path AS documents_storage_path, documents.status AS documents_status, documents.size_bytes AS documents_size_bytes, documents.content_hash AS documents_content_hash, documents.error_message AS documents_error_message, documents.processed_at AS documents_processed_at, documents.created_at AS documents_created_at 
+FROM documents 
+WHERE documents.id IN (?)]
+[parameters: ('5ea6798a-a0db-4c03-b715-25734adb081e',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: documents.status
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/chat.py", line 156, in run_chat
+    result = copilot_pipeline.ask(user_input, company=company)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/pipeline.py", line 49, in ask
+    corpus = [self._as_retrieved(chunk) for chunk in chunks_for_company(session, company)]
+                                                     ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/repository.py", line 62, in chunks_for_company
+    return list(session.scalars(stmt).unique())
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/result.py", line 551, in iterrows
+    for raw_row in self._fetchiter_impl():
+                   ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/loading.py", line 247, in chunks
+    post_load.invoke(context, path)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/loading.py", line 1564, in invoke
+    loader(
+    ~~~~~~^
+        effective_context, path, states, self.load_keys, *arg, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/strategies.py", line 3341, in _load_for_path
+    self._load_via_child(
+    ~~~~~~~~~~~~~~~~~~~~^
+        our_states,
+        ^^^^^^^^^^^
+    ...<4 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/strategies.py", line 3372, in _load_via_child
+    for k, v in context.session.execute(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        q,
+        ^^
+    ...<6 lines>...
+        execution_options=execution_options,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ).unique()
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2373, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: documents.status
+[SQL: SELECT documents.id AS documents_id, documents.company_id AS documents_company_id, documents.filename AS documents_filename, documents.document_type AS documents_document_type, documents.fiscal_year AS documents_fiscal_year, documents.storage_path AS documents_storage_path, documents.status AS documents_status, documents.size_bytes AS documents_size_bytes, documents.content_hash AS documents_content_hash, documents.error_message AS documents_error_message, documents.processed_at AS documents_processed_at, documents.created_at AS documents_created_at 
+FROM documents 
+WHERE documents.id IN (?)]
+[parameters: ('5ea6798a-a0db-4c03-b715-25734adb081e',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-10-26 11:56:01 | ERROR    | rag_system | Copilot pipeline failed: (sqlite3.OperationalError) no such column: documents.status
+[SQL: SELECT documents.id AS documents_id, documents.company_id AS documents_company_id, documents.filename AS documents_filename, documents.document_type AS documents_document_type, documents.fiscal_year AS documents_fiscal_year, documents.storage_path AS documents_storage_path, documents.status AS documents_status, documents.size_bytes AS documents_size_bytes, documents.content_hash AS documents_content_hash, documents.error_message AS documents_error_message, documents.processed_at AS documents_processed_at, documents.created_at AS documents_created_at 
+FROM documents 
+WHERE documents.id IN (?)]
+[parameters: ('5ea6798a-a0db-4c03-b715-25734adb081e',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: documents.status
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/chat.py", line 156, in run_chat
+    result = copilot_pipeline.ask(user_input, company=company)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/pipeline.py", line 49, in ask
+    corpus = [self._as_retrieved(chunk) for chunk in chunks_for_company(session, company)]
+                                                     ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/repository.py", line 62, in chunks_for_company
+    return list(session.scalars(stmt).unique())
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/result.py", line 551, in iterrows
+    for raw_row in self._fetchiter_impl():
+                   ~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/loading.py", line 247, in chunks
+    post_load.invoke(context, path)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/loading.py", line 1564, in invoke
+    loader(
+    ~~~~~~^
+        effective_context, path, states, self.load_keys, *arg, **kw
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/strategies.py", line 3341, in _load_for_path
+    self._load_via_child(
+    ~~~~~~~~~~~~~~~~~~~~^
+        our_states,
+        ^^^^^^^^^^^
+    ...<4 lines>...
+        execution_options,
+        ^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/strategies.py", line 3372, in _load_via_child
+    for k, v in context.session.execute(
+                ~~~~~~~~~~~~~~~~~~~~~~~^
+        q,
+        ^^
+    ...<6 lines>...
+        execution_options=execution_options,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ).unique()
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2373, in execute
+    return self._execute_internal(
+           ~~~~~~~~~~~~~~~~~~~~~~^
+        statement,
+        ^^^^^^^^^^
+    ...<4 lines>...
+        _add_event=_add_event,
+        ^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self,
+        ^^^^^
+    ...<4 lines>...
+        conn,
+        ^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+        statement, params or {}, execution_options=execution_options
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: documents.status
+[SQL: SELECT documents.id AS documents_id, documents.company_id AS documents_company_id, documents.filename AS documents_filename, documents.document_type AS documents_document_type, documents.fiscal_year AS documents_fiscal_year, documents.storage_path AS documents_storage_path, documents.status AS documents_status, documents.size_bytes AS documents_size_bytes, documents.content_hash AS documents_content_hash, documents.error_message AS documents_error_message, documents.processed_at AS documents_processed_at, documents.created_at AS documents_created_at 
+FROM documents 
+WHERE documents.id IN (?)]
+[parameters: ('5ea6798a-a0db-4c03-b715-25734adb081e',)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2026-10-31 13:44:39 | ERROR    | rag_system | Copilot pipeline failed: [Errno 61] Connection refused
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 101, in handle_request
+    raise exc
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 78, in handle_request
+    stream = self._connect(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_backends/sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 61] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/chat.py", line 156, in run_chat
+    result = copilot_pipeline.ask(user_input, company=company)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/pipeline.py", line 82, in ask
+    answer = str(self._client().invoke(PROMPT.format(question=question, evidence=prompt_text(pack))))
+                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 384, in invoke
+    self.generate_prompt(
+    ~~~~~~~~~~~~~~~~~~~~^
+        [self._convert_input(input)],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 801, in generate_prompt
+    return self.generate(prompt_strings, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 1031, in generate
+    return self._generate_helper(
+           ~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<3 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 827, in _generate_helper
+    self._generate(
+    ~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<3 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 470, in _generate
+    final_chunk = self._stream_with_aggregation(
+        prompt,
+    ...<3 lines>...
+        **kwargs,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 429, in _stream_with_aggregation
+    for stream_resp in self._create_generate_stream(prompt, stop, **kwargs):
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 373, in _create_generate_stream
+    yield from self._client.generate(
+        **self._generate_params(prompt, stop=stop, **kwargs)
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/ollama/_client.py", line 184, in inner
+    with self._client.stream(*args, **kwargs) as r:
+         ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 868, in stream
+    response = self.send(
+        request=request,
+    ...<2 lines>...
+        stream=True,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 61] Connection refused
+2026-10-31 14:23:03 | ERROR    | rag_system | Copilot pipeline failed: [Errno 61] Connection refused
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 101, in handle_request
+    raise exc
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 78, in handle_request
+    stream = self._connect(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_backends/sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 61] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/chat.py", line 177, in run_chat
+    result = copilot_pipeline.ask(user_input, company=company)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/pipeline.py", line 86, in ask
+    answer = str(self._client().invoke(PROMPT.format(question=question, evidence=prompt_text(pack))))
+                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 384, in invoke
+    self.generate_prompt(
+    ~~~~~~~~~~~~~~~~~~~~^
+        [self._convert_input(input)],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 801, in generate_prompt
+    return self.generate(prompt_strings, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 1031, in generate
+    return self._generate_helper(
+           ~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<3 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 827, in _generate_helper
+    self._generate(
+    ~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<3 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 470, in _generate
+    final_chunk = self._stream_with_aggregation(
+        prompt,
+    ...<3 lines>...
+        **kwargs,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 429, in _stream_with_aggregation
+    for stream_resp in self._create_generate_stream(prompt, stop, **kwargs):
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 373, in _create_generate_stream
+    yield from self._client.generate(
+        **self._generate_params(prompt, stop=stop, **kwargs)
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/ollama/_client.py", line 184, in inner
+    with self._client.stream(*args, **kwargs) as r:
+         ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 868, in stream
+    response = self.send(
+        request=request,
+    ...<2 lines>...
+        stream=True,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 61] Connection refused
+2026-10-31 14:23:18 | ERROR    | rag_system | Copilot pipeline failed: [Errno 61] Connection refused
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 250, in handle_request
+    resp = self._pool.handle_request(req)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py", line 256, in handle_request
+    raise exc from None
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection_pool.py", line 236, in handle_request
+    response = connection.handle_request(
+        pool_request.request
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 101, in handle_request
+    raise exc
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 78, in handle_request
+    stream = self._connect(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_sync/connection.py", line 124, in _connect
+    stream = self._network_backend.connect_tcp(**kwargs)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_backends/sync.py", line 207, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: [Errno 61] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/chat.py", line 177, in run_chat
+    result = copilot_pipeline.ask(user_input, company=company)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/dd_copilot/pipeline.py", line 86, in ask
+    answer = str(self._client().invoke(PROMPT.format(question=question, evidence=prompt_text(pack))))
+                 ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 384, in invoke
+    self.generate_prompt(
+    ~~~~~~~~~~~~~~~~~~~~^
+        [self._convert_input(input)],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 801, in generate_prompt
+    return self.generate(prompt_strings, stop=stop, callbacks=callbacks, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 1031, in generate
+    return self._generate_helper(
+           ~~~~~~~~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<3 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_core/language_models/llms.py", line 827, in _generate_helper
+    self._generate(
+    ~~~~~~~~~~~~~~^
+        prompts,
+        ^^^^^^^^
+    ...<3 lines>...
+        **kwargs,
+        ^^^^^^^^^
+    )
+    ^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 470, in _generate
+    final_chunk = self._stream_with_aggregation(
+        prompt,
+    ...<3 lines>...
+        **kwargs,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 429, in _stream_with_aggregation
+    for stream_resp in self._create_generate_stream(prompt, stop, **kwargs):
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/langchain_ollama/llms.py", line 373, in _create_generate_stream
+    yield from self._client.generate(
+        **self._generate_params(prompt, stop=stop, **kwargs)
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/ollama/_client.py", line 184, in inner
+    with self._client.stream(*args, **kwargs) as r:
+         ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 868, in stream
+    response = self.send(
+        request=request,
+    ...<2 lines>...
+        stream=True,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 914, in send
+    response = self._send_handling_auth(
+        request,
+    ...<2 lines>...
+        history=[],
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 942, in _send_handling_auth
+    response = self._send_handling_redirects(
+        request,
+        follow_redirects=follow_redirects,
+        history=history,
+    )
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 979, in _send_handling_redirects
+    response = self._send_single_request(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_client.py", line 1014, in _send_single_request
+    response = transport.handle_request(request)
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 249, in handle_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/mayjary/Downloads/ai-due-diligence-copilot-persisted/.venv/lib/python3.13/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: [Errno 61] Connection refused
