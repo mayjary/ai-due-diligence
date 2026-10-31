@@ -12,6 +12,9 @@ chroma_db/
 # macOS
 .DS_Store
 
+#.env
+.env
+
 # Virtual environments
 .venv/
 venv/
